@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest a capability recurin should have
+labels: ["type: feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to bill, and what stops you today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you would like it to work. API shapes or examples help.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
