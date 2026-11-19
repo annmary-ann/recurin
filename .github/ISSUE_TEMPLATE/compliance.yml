@@ -1,0 +1,46 @@
+name: Compliance rule
+description: recurin gets an RBI, NPCI, GST or DPDP rule wrong, or a rule has changed
+labels: ["compliance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We change compliance behaviour only when there is a primary source: an RBI circular, NPCI guideline, CBIC notification or the text of an Act or its Rules. Blog posts and gateway docs are useful context but are not enough on their own.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - RBI e-mandate (pre-debit notice, limits, mandate rules)
+        - UPI AutoPay
+        - e-NACH
+        - GST invoicing or tax calculation
+        - GST e-invoicing (IRN)
+        - DPDP or data storage
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: rule
+    attributes:
+      label: The rule
+      description: What the rule requires, quoted where possible.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Primary source link
+      description: Link to the official circular, notification or Act.
+    validations:
+      required: true
+  - type: input
+    id: effective
+    attributes:
+      label: Effective date
+      placeholder: YYYY-MM-DD
+  - type: textarea
+    id: current
+    attributes:
+      label: What recurin does today
+      description: Where recurin's behaviour differs from the rule.

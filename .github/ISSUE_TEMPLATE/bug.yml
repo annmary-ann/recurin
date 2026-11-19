@@ -1,0 +1,35 @@
+name: Bug report
+description: Something does not work as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security problem? Do not file it here. Follow SECURITY.md instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. If money is involved, include the amounts.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: API calls, test-clock steps or a failing test. Remove real customer data.
+      value: |
+        1.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, request ID or trace ID
+      render: shell
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
