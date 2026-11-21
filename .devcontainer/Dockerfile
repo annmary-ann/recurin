@@ -1,10 +1,17 @@
-# Development image for recurin: the Go toolchain plus the few system tools the
-# project needs. Used by the devcontainer and by scripts/dev.ps1 / scripts/dev.sh.
+# Development image for recurin: the Go toolchain plus the tools the project
+# needs. Used by the devcontainer and by scripts/dev.ps1 / scripts/dev.sh.
+# CI installs the same tool versions, so bump them here and in CI together.
 FROM golang:1.27-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates git postgresql-client \
+    && apt-get install -y --no-install-recommends ca-certificates git make postgresql-client \
     && rm -rf /var/lib/apt/lists/*
+
+# Built with this image's Go, so the linter always understands the Go version
+# the project targets.
+ARG GOLANGCI_LINT_VERSION=v2.15.0
+RUN go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION} \
+    && rm -rf /root/.cache/go-build /go/pkg/mod
 
 # The repo is bind-mounted from the host, so its files belong to a different
 # user. Without this, git (and Go's VCS stamping) refuse to read the repo.
