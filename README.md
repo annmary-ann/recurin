@@ -4,7 +4,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 ![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)
-![Go 1.25](https://img.shields.io/badge/go-1.25-00ADD8.svg)
+![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg)
 ![PostgreSQL 16](https://img.shields.io/badge/postgres-16-336791.svg)
 
 > **Status: pre-alpha, being built in the open.** Nothing here is ready for production yet. Track progress on the [project board](https://github.com/users/annmary-ann/projects/9). The first public release (v0.1, the full Indian renewal loop) is planned for March 2027.
@@ -62,7 +62,7 @@ Each module owns its tables and talks to the others only through Go interfaces; 
 
 ## Tech stack
 
-Go 1.25 · PostgreSQL 16 · pgx + sqlc · goose · River (Postgres job queue) · OpenAPI 3.1 with oapi-codegen · OpenTelemetry · Gotenberg · Docker Compose and Helm · React admin console
+Go 1.27 · PostgreSQL 16 · pgx + sqlc · goose · River (Postgres job queue) · OpenAPI 3.1 with oapi-codegen · OpenTelemetry · Gotenberg · Docker Compose and Helm · React admin console
 
 ## Quickstart
 

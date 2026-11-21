@@ -39,7 +39,23 @@ If you find that recurin gets an RBI, NPCI, GST or DPDP rule wrong, open a **Com
 
 ## Development setup
 
-The toolchain and dev stack are being set up in milestone M0. This section will cover Go, the devcontainer and `docker compose` once those land.
+You need **Docker** (Docker Desktop on Windows and macOS) and **git**. The Go toolchain runs in a container, so every machine and CI use the same Go version (currently 1.27) and nothing has to be installed on the host.
+
+Run any Go command through the dev script:
+
+```sh
+./scripts/dev.sh go test ./...         # macOS / Linux / WSL
+./scripts/dev.ps1 go test ./...        # Windows PowerShell
+./scripts/dev.sh                       # a shell inside the container
+```
+
+The first run builds the image from `.devcontainer/Dockerfile`; later runs reuse it, and Go's module and build caches persist in Docker volumes. The container gets the host's Docker socket, so integration tests can start Postgres with testcontainers.
+
+**Editors.** VS Code and JetBrains can open the repo in the devcontainer (`.devcontainer/devcontainer.json`) for completion and debugging inside the same image.
+
+**Native Go is optional.** If Go 1.27 runs natively on your machine, you can call `go` directly. Some Windows machines with Smart App Control turned on block `go.exe` and the test binaries it builds; the container sidesteps that without weakening the policy.
+
+The `docker compose` dev stack (Postgres, Gotenberg, Mailpit, Jaeger) arrives with issue #5.
 
 ## Code of conduct
 
