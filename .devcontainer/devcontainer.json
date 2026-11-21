@@ -1,0 +1,18 @@
+{
+  "name": "recurin",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind",
+    "source=recurin-gomod,target=/go/pkg/mod,type=volume",
+    "source=recurin-gocache,target=/root/.cache/go-build,type=volume"
+  ],
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  },
+  "postCreateCommand": "go version"
+}
