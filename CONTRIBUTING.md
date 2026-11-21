@@ -49,6 +49,14 @@ Run any Go command through the dev script:
 ./scripts/dev.sh                       # a shell inside the container
 ```
 
+Common tasks live in the `Makefile` (`make help` lists them):
+
+```sh
+./scripts/dev.ps1 make check     # lint + tests, the same as CI
+./scripts/dev.ps1 make fmt       # format with gofumpt and goimports
+./scripts/dev.ps1 make build     # build ./bin/recurin
+```
+
 The first run builds the image from `.devcontainer/Dockerfile`; later runs reuse it, and Go's module and build caches persist in Docker volumes. The container gets the host's Docker socket, so integration tests can start Postgres with testcontainers.
 
 **Editors.** VS Code and JetBrains can open the repo in the devcontainer (`.devcontainer/devcontainer.json`) for completion and debugging inside the same image.
