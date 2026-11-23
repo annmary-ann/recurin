@@ -3,6 +3,7 @@
 **Self-hostable subscription billing for India.** UPI AutoPay and e-NACH mandates, RBI pre-debit notices, GST-correct invoices and a double-entry ledger, in one Go binary next to your Postgres.
 
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![CI](https://github.com/annmary-ann/recurin/actions/workflows/ci.yml/badge.svg)](https://github.com/annmary-ann/recurin/actions/workflows/ci.yml)
 ![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange.svg)
 ![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8.svg)
 ![PostgreSQL 16](https://img.shields.io/badge/postgres-16-336791.svg)
