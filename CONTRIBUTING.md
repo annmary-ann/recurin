@@ -63,7 +63,25 @@ The first run builds the image from `.devcontainer/Dockerfile`; later runs reuse
 
 **Native Go is optional.** If Go 1.27 runs natively on your machine, you can call `go` directly. Some Windows machines with Smart App Control turned on block `go.exe` and the test binaries it builds; the container sidesteps that without weakening the policy.
 
-The `docker compose` dev stack (Postgres, Gotenberg, Mailpit, Jaeger) arrives with issue #5.
+### Dev stack
+
+`deploy/compose/docker-compose.yml` runs recurin's dependencies. With `make` (macOS, Linux, or inside the dev container) use `make up`, `make up-app` and `make down`. On Windows, call Docker Compose directly:
+
+```powershell
+docker compose -f deploy/compose/docker-compose.yml up -d --wait                       # dependencies
+docker compose -f deploy/compose/docker-compose.yml --profile app up -d --wait --build # + recurin
+docker compose -f deploy/compose/docker-compose.yml --profile app down                 # stop
+```
+
+| Service | Host port | What it is for |
+| --- | --- | --- |
+| Postgres 16 | 5436 | `postgres://recurin:recurin@localhost:5436/recurin` |
+| recurin API (`app` profile) | 8086 | `http://localhost:8086/healthz` |
+| Mailpit | 1036 (SMTP), 8036 (web UI) | Catches every email recurin sends |
+| Gotenberg | 3036 | Renders invoice HTML to PDF |
+| Jaeger | 16689 (UI), 4323 / 4324 (OTLP gRPC / HTTP) | Traces |
+
+Every port can be changed with a `RECURIN_*_PORT` variable (see the compose file). From inside the dev container, reach these services at `host.docker.internal` instead of `localhost`.
 
 ## Code of conduct
 

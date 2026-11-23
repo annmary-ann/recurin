@@ -1,0 +1,91 @@
+# Local development stack for recurin.
+#
+#   make up                       # dependencies only (Postgres, Gotenberg, Mailpit, Jaeger)
+#   make up-app                   # dependencies + recurin built from source
+#   make down                     # stop everything (data is kept in volumes)
+#
+# Host ports avoid the other local stacks (5432-5435, 16686-16688, 4317-4322).
+# Override any of them with the RECURIN_*_PORT variables.
+name: recurin
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: recurin
+      POSTGRES_PASSWORD: recurin # local development only
+      POSTGRES_DB: recurin
+    ports:
+      - "${RECURIN_DB_PORT:-5436}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recurin -d recurin"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  gotenberg: # renders invoice HTML to PDF
+    image: gotenberg/gotenberg:8.40.0
+    ports:
+      - "${RECURIN_GOTENBERG_PORT:-3036}:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailpit: # catches outgoing email; web UI shows every message
+    image: axllent/mailpit:v1.33.0
+    ports:
+      - "${RECURIN_SMTP_PORT:-1036}:1025"
+      - "${RECURIN_MAILPIT_UI_PORT:-8036}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  jaeger: # OpenTelemetry traces
+    image: jaegertracing/jaeger:2.23.0
+    ports:
+      - "${RECURIN_JAEGER_UI_PORT:-16689}:16686"
+      - "${RECURIN_OTLP_GRPC_PORT:-4323}:4317"
+      - "${RECURIN_OTLP_HTTP_PORT:-4324}:4318"
+
+  migrate:
+    profiles: [app]
+    # Reuses the image the api service builds; two services building the same
+    # context at once race in BuildKit.
+    image: recurin:local
+    pull_policy: never
+    command: ["migrate"]
+    environment: &recurin-env
+      RECURIN_HTTP_ADDR: ":8080"
+      RECURIN_DATABASE_URL: postgres://recurin:recurin@postgres:5432/recurin?sslmode=disable
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    profiles: [app]
+    image: recurin:local
+    build:
+      context: ../..
+    command: ["api"]
+    environment: *recurin-env
+    ports:
+      - "${RECURIN_API_PORT:-8086}:8080"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/recurin", "healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
