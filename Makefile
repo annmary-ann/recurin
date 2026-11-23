@@ -41,6 +41,24 @@ gen: ## Run code generators (sqlc, oapi-codegen) once they exist
 .PHONY: check
 check: lint test ## Lint and test: what CI runs
 
+COMPOSE := docker compose -f deploy/compose/docker-compose.yml
+
+.PHONY: up
+up: ## Start the dev dependencies (Postgres, Gotenberg, Mailpit, Jaeger)
+	$(COMPOSE) up -d --wait
+
+.PHONY: up-app
+up-app: ## Start the dependencies plus recurin (migrate, then api on :8086)
+	$(COMPOSE) --profile app up -d --wait --build
+
+.PHONY: down
+down: ## Stop the dev stack (data stays in the pgdata volume)
+	$(COMPOSE) --profile app down
+
+.PHONY: image
+image: ## Build the production image
+	docker build --build-arg VERSION=$(VERSION) -t recurin:$(VERSION) .
+
 .PHONY: clean
 clean: ## Remove build output
 	rm -rf bin coverage.out
