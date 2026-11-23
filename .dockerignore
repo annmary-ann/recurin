@@ -1,0 +1,11 @@
+.git
+.github
+.devcontainer
+bin
+dist
+coverage.out
+*.md
+!README.md
+deploy
+docs
+web/admin/node_modules
