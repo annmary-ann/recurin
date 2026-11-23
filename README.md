@@ -59,7 +59,7 @@ flowchart TB
     modules -.->|signed webhooks| platform
 ```
 
-Each module owns its tables and talks to the others only through Go interfaces; CI enforces the boundaries.
+Each module owns its tables and talks to the others only through Go interfaces; CI enforces the boundaries. The full design, data model and subscription lifecycle are in [docs/architecture.md](docs/architecture.md); the reasoning is in the [ADRs](docs/adr/README.md).
 
 ## Tech stack
 
