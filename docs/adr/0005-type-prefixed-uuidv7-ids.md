@@ -14,12 +14,12 @@ IDs appear everywhere people debug billing: API responses, webhook payloads, log
 
 ## Decision
 
-Every public ID is a **type prefix plus a UUIDv7**, for example `cus_01JD8X...`, `sub_...`, `inv_...`, `pay_...`, `man_...`.
+Every public ID is a **type prefix plus a UUIDv7**, for example `cus_01jd8x...`, `sub_...`, `inv_...`, `pay_...`, `man_...`.
 
 - **UUIDv7** is time-ordered, so new rows append near the end of the index, and IDs sort roughly by creation time.
 - The prefix names the type. The API rejects an ID with the wrong prefix (`inv_` passed where `cus_` is expected) before any query runs.
 - In Postgres the value is stored as a native `uuid`; the prefix is added and checked at the boundary by typed Go IDs (`CustomerID`, `InvoiceID`), so the compiler stops mixing them up.
-- The text form encodes the UUID compactly (base32), keeping IDs short in URLs and logs.
+- The text form encodes the UUID compactly as 26 lower-case Crockford base32 characters, keeping IDs short in URLs and logs. This matches the [TypeID](https://github.com/jetify-com/typeid) format, so its libraries in other languages can read recurin IDs.
 
 ## Alternatives considered
 
