@@ -1,0 +1,10 @@
+# oapi-codegen configuration: types plus a strict chi server for api/openapi.yaml.
+package: gen
+output: api.gen.go
+generate:
+  models: true
+  chi-server: true
+  strict-server: true
+  embedded-spec: true
+output-options:
+  skip-prune: true # keep shared schemas (Money, ListMeta) before an endpoint uses them

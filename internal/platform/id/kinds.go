@@ -13,6 +13,8 @@ const (
 	prefixPlan         = "pln"
 	prefixPrice        = "prc"
 	prefixCoupon       = "cpn"
+	prefixAPIKey       = "key"
+	prefixRequest      = "req"
 )
 
 // Kinds. Use them as type arguments, for example id.New[id.Customer]().
@@ -35,6 +37,10 @@ type (
 	Price struct{}
 	// Coupon is the kind of CouponID.
 	Coupon struct{}
+	// APIKey is the kind of APIKeyID. The ID names a key; it is not the secret.
+	APIKey struct{}
+	// Request is the kind of RequestID, sent in the Request-Id header.
+	Request struct{}
 )
 
 func (Account) prefix() string      { return prefixAccount }
@@ -46,6 +52,8 @@ func (Mandate) prefix() string      { return prefixMandate }
 func (Plan) prefix() string         { return prefixPlan }
 func (Price) prefix() string        { return prefixPrice }
 func (Coupon) prefix() string       { return prefixCoupon }
+func (APIKey) prefix() string       { return prefixAPIKey }
+func (Request) prefix() string      { return prefixRequest }
 
 // Typed IDs.
 type (
@@ -67,4 +75,8 @@ type (
 	PriceID = ID[Price]
 	// CouponID identifies a coupon: cpn_...
 	CouponID = ID[Coupon]
+	// APIKeyID identifies an API key: key_...
+	APIKeyID = ID[APIKey]
+	// RequestID identifies one API request: req_...
+	RequestID = ID[Request]
 )

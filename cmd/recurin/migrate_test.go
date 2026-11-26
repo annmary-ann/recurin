@@ -61,9 +61,9 @@ func TestMigrateAgainstPostgres(t *testing.T) {
 	}
 
 	migrate("status", "applied")
-	migrate("down", "rolled back 00001_baseline.sql")
+	migrate("down", "rolled back 00002_api_keys.sql")
 	migrate("status", "pending")
-	migrate("up", "applied 00001_baseline.sql")
+	migrate("up", "applied 00002_api_keys.sql")
 	migrate("up", "schema is up to date")
 }
 

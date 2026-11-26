@@ -14,6 +14,15 @@ overrides:
       # Typed IDs (internal/platform/id) for primary and tenant keys.
       - column: accounts.id
         go_type: github.com/annmary-ann/recurin/internal/platform/id.AccountID
+      - column: api_keys.id
+        go_type: github.com/annmary-ann/recurin/internal/platform/id.APIKeyID
+      - column: api_keys.account_id
+        go_type: github.com/annmary-ann/recurin/internal/platform/id.AccountID
+      - db_type: timestamptz
+        nullable: true
+        go_type:
+          type: time.Time
+          pointer: true
 
 sql:
   - name: platform

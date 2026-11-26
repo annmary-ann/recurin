@@ -1,0 +1,260 @@
+openapi: 3.1.0
+info:
+  title: recurin API
+  version: 0.1.0
+  summary: Self-hostable subscription billing for India.
+  description: |
+    The recurin REST API. This file is the contract: the server is generated
+    from it and validates every request against it (docs/adr/0004-spec-first-openapi.md).
+
+    ## Authentication
+    Send a secret API key as a bearer token: `Authorization: Bearer sk_test_...`.
+    Keys starting `sk_test_` act on test-mode data, `sk_live_` on live data.
+    A missing, malformed, unknown or revoked key gets `401` with an
+    `authentication_error`.
+
+    ## Errors
+    Every error response has the same body: an `error` object with `type`,
+    `code`, `message`, an optional `param` naming the offending field, and the
+    `request_id` also sent in the `Request-Id` header.
+
+    ## Conventions
+    - IDs are prefixed (`acct_`, `cus_`, `inv_` ...) and opaque.
+    - Money is an integer count of the currency's minor unit (paise for INR)
+      plus an ISO 4217 code. There are no decimal amounts.
+    - Timestamps are RFC 3339 strings in UTC.
+    - Lists use cursor pagination: `limit`, then `starting_after` with the
+      last ID of the previous page.
+  license:
+    name: Apache-2.0
+    identifier: Apache-2.0
+
+servers:
+  - url: http://localhost:8086
+    description: Local development (Docker Compose)
+
+security:
+  - secretKey: []
+
+tags:
+  - name: System
+    description: Process health.
+  - name: Account
+    description: The account the API key belongs to.
+
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      tags: [System]
+      summary: Liveness check
+      description: Reports that the process is up. Does not check dependencies.
+      security: []
+      responses:
+        "200":
+          description: The process is up.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /v1/account:
+    get:
+      operationId: getAccount
+      tags: [Account]
+      summary: Retrieve the current account
+      description: Returns the account that owns the API key used for the request.
+      responses:
+        "200":
+          description: The account.
+          headers:
+            Request-Id:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        default:
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    secretKey:
+      type: http
+      scheme: bearer
+      description: A secret API key, `sk_test_...` or `sk_live_...`.
+
+  headers:
+    RequestId:
+      description: Unique ID of this request. Quote it when asking for support.
+      schema:
+        type: string
+        examples: [req_01jd8x3k5fe2s9v7q4w6ytbn0m]
+
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of objects to return.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    StartingAfter:
+      name: starting_after
+      in: query
+      description: Cursor for the next page; the ID of the last object on the previous page.
+      schema:
+        type: string
+    EndingBefore:
+      name: ending_before
+      in: query
+      description: Cursor for the previous page; the ID of the first object on the current page.
+      schema:
+        type: string
+
+  responses:
+    Unauthorized:
+      description: The API key is missing, malformed, unknown or revoked.
+      headers:
+        Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              type: authentication_error
+              code: api_key_missing
+              message: "No API key provided. Send it as \"Authorization: Bearer sk_test_...\"."
+              request_id: req_01jd8x3k5fe2s9v7q4w6ytbn0m
+    Error:
+      description: An error. See the `type` and `code` fields.
+      headers:
+        Request-Id:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Health:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+
+    ErrorDetail:
+      type: object
+      required: [type, code, message, request_id]
+      properties:
+        type:
+          $ref: "#/components/schemas/ErrorType"
+        code:
+          type: string
+          description: Machine-readable reason, stable across releases, such as `api_key_invalid` or `parameter_invalid`.
+        message:
+          type: string
+          description: Human-readable explanation. May change; do not match on it.
+        param:
+          type: string
+          description: The request parameter or body field the error is about, if any.
+        request_id:
+          type: string
+
+    ErrorType:
+      type: string
+      description: |
+        The category of error:
+        - `invalid_request_error`: the request is malformed or fails validation (4xx).
+        - `authentication_error`: no valid API key (401).
+        - `permission_error`: the key may not do this (403).
+        - `not_found_error`: the resource or route does not exist (404).
+        - `conflict_error`: the resource changed or an idempotency key was reused (409).
+        - `rate_limit_error`: too many requests (429).
+        - `api_error`: something went wrong on recurin's side (5xx).
+      enum:
+        - invalid_request_error
+        - authentication_error
+        - permission_error
+        - not_found_error
+        - conflict_error
+        - rate_limit_error
+        - api_error
+
+    Money:
+      type: object
+      description: 'An amount in the currency''s minor unit: `{"amount": 49900, "currency": "INR"}` is ₹499.00.'
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          format: int64
+        currency:
+          $ref: "#/components/schemas/Currency"
+
+    Currency:
+      type: string
+      description: ISO 4217 currency code.
+      enum: [INR, USD, EUR, GBP, JPY]
+
+    Metadata:
+      type: object
+      description: |
+        Your own key-value data. Up to 50 keys; keys up to 40 characters,
+        values up to 500 characters. recurin stores it and never reads it.
+      maxProperties: 50
+      propertyNames:
+        maxLength: 40
+      additionalProperties:
+        type: string
+        maxLength: 500
+
+    ListMeta:
+      type: object
+      description: Pagination fields every list response carries alongside `data`.
+      required: [has_more]
+      properties:
+        has_more:
+          type: boolean
+          description: Whether more objects exist after this page.
+        next_cursor:
+          type: [string, "null"]
+          description: Pass as `starting_after` to get the next page; null on the last page.
+
+    Account:
+      type: object
+      required: [id, object, name, livemode, created_at, metadata]
+      properties:
+        id:
+          type: string
+          examples: [acct_01jd8x3k5fe2s9v7q4w6ytbn0m]
+        object:
+          type: string
+          enum: [account]
+        name:
+          type: string
+        livemode:
+          type: boolean
+          description: True when the request used a live-mode key.
+        created_at:
+          type: string
+          format: date-time
+        metadata:
+          $ref: "#/components/schemas/Metadata"

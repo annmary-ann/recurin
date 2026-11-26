@@ -17,6 +17,7 @@ env:
   GOLANGCI_LINT_VERSION: v2.15.0
   GOVULNCHECK_VERSION: v1.9.0
   SQLC_VERSION: 1.31.1
+  OASDIFF_VERSION: v1.41.0
 
 jobs:
   lint:
@@ -78,6 +79,32 @@ jobs:
             exit 1
           fi
 
+  api-compat:
+    name: API compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      # Compares api/openapi.yaml with the version on the base branch (for a
+      # PR) or the previous commit (for a push). Breaking changes fail.
+      - name: Check api/openapi.yaml for breaking changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if ! git cat-file -e "${BASE_SHA}:api/openapi.yaml" 2>/dev/null; then
+            echo "No api/openapi.yaml at ${BASE_SHA}; nothing to compare against."
+            exit 0
+          fi
+          git show "${BASE_SHA}:api/openapi.yaml" > "${RUNNER_TEMP}/base-openapi.yaml"
+          go run github.com/oasdiff/oasdiff@${OASDIFF_VERSION} breaking \
+            --fail-on ERR --format githubactions \
+            "${RUNNER_TEMP}/base-openapi.yaml" api/openapi.yaml
+
   vulncheck:
     name: Vulnerability check
     runs-on: ubuntu-latest
@@ -109,7 +136,7 @@ jobs:
     name: CI passed
     # One stable check name for branch protection, however the jobs above change.
     if: always()
-    needs: [lint, test, generated, vulncheck, secrets]
+    needs: [lint, test, generated, api-compat, vulncheck, secrets]
     runs-on: ubuntu-latest
     steps:
       - name: All jobs succeeded

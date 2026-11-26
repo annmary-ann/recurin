@@ -20,3 +20,17 @@ type Account struct {
 	Version   int64
 	Metadata  json.RawMessage
 }
+
+// Secret API keys (sk_test_/sk_live_), stored as SHA-256 hashes.
+type ApiKey struct {
+	ID         id.APIKeyID
+	AccountID  id.AccountID
+	Mode       string
+	Name       string
+	SecretHash []byte
+	SecretHint string
+	RevokedAt  *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Version    int64
+}

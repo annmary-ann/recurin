@@ -15,6 +15,8 @@ import (
 	"time"
 
 	"github.com/annmary-ann/recurin/internal/api"
+	"github.com/annmary-ann/recurin/internal/platform/platformdb"
+	"github.com/annmary-ann/recurin/internal/platform/postgres"
 )
 
 // version is set at build time with -ldflags "-X main.version=...".
@@ -29,6 +31,8 @@ Commands:
   api          Serve the REST API and gateway webhook receivers
   worker       Run background jobs: billing runs, notices, charges, dunning, webhooks
   migrate      Apply schema migrations: migrate [up|down|status] (default up)
+  account      Create an account and its first test key: account create <name>
+  apikey       Manage secret keys: apikey create <acct_id> <test|live> [name], apikey revoke <key_id>
   healthcheck  Exit 0 if the local API answers /healthz (for container health checks)
   version      Print the version
   help         Show this help
@@ -75,6 +79,10 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 		return runAPI(ctx, getenv, stderr)
 	case "migrate":
 		return runMigrate(ctx, args[1:], getenv, stdout, stderr)
+	case "account":
+		return runAccount(ctx, args[1:], getenv, stdout, stderr)
+	case "apikey":
+		return runAPIKey(ctx, args[1:], getenv, stdout, stderr)
 	case "worker":
 		fmt.Fprintln(stderr, "recurin worker: not implemented yet")
 		return exitError
@@ -96,12 +104,29 @@ func httpAddr(getenv func(string) string) string {
 func runAPI(ctx context.Context, getenv func(string) string, stderr io.Writer) int {
 	logger := slog.New(slog.NewJSONHandler(stderr, nil)).With("role", "api", "version", version)
 
+	dsn := getenv("RECURIN_DATABASE_URL")
+	if dsn == "" {
+		logger.ErrorContext(ctx, "RECURIN_DATABASE_URL is not set")
+		return exitError
+	}
+	pool, err := postgres.Connect(ctx, dsn)
+	if err != nil {
+		logger.ErrorContext(ctx, "database unavailable", "err", err)
+		return exitError
+	}
+	defer pool.Close()
+
+	handler, err := api.New(api.Config{Version: version, Queries: platformdb.New(pool), Logger: logger})
+	if err != nil {
+		logger.ErrorContext(ctx, "api setup failed", "err", err)
+		return exitError
+	}
 	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", httpAddr(getenv))
 	if err != nil {
 		logger.ErrorContext(ctx, "listen failed", "err", err)
 		return exitError
 	}
-	if err := api.Serve(ctx, ln, api.Handler(version), logger); err != nil {
+	if err := api.Serve(ctx, ln, handler, logger); err != nil {
 		logger.ErrorContext(ctx, "api stopped with an error", "err", err)
 		return exitError
 	}
