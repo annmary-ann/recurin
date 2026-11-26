@@ -1,17 +1,27 @@
 // Package api is recurin's HTTP layer: routing, middleware and the server
 // lifecycle. Business logic lives in the module packages; handlers here only
 // translate between HTTP and those modules.
+//
+// The contract is api/openapi.yaml. internal/api/gen is generated from it, the
+// handlers implement its strict interface, and every request is validated
+// against it before a handler runs, including which operations need an API key.
 package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	nethttpmiddleware "github.com/oapi-codegen/nethttp-middleware"
+
+	"github.com/annmary-ann/recurin/internal/api/gen"
+	"github.com/annmary-ann/recurin/internal/platform/id"
+	"github.com/annmary-ann/recurin/internal/platform/platformdb"
 )
 
 // Server timeouts. ReadHeaderTimeout guards against slow-loris clients.
@@ -23,27 +33,71 @@ const (
 	shutdownTimeout   = 10 * time.Second
 )
 
-// Handler returns the HTTP handler for the recurin API.
-func Handler(version string) http.Handler {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", healthz(version))
-	return mux
+// Queries is the data the HTTP layer reads. *platformdb.Queries implements it.
+type Queries interface {
+	AuthenticateAPIKey(ctx context.Context, secretHash []byte) (platformdb.AuthenticateAPIKeyRow, error)
+	GetAccount(ctx context.Context, id id.AccountID) (platformdb.Account, error)
 }
 
-// healthz reports that the process is up. It deliberately does not check
-// dependencies: a liveness probe that fails when Postgres blips would make an
-// orchestrator restart healthy API pods. Readiness gets its own endpoint.
-func healthz(version string) http.HandlerFunc {
-	body := struct {
-		Status  string `json:"status"`
-		Version string `json:"version"`
-	}{Status: "ok", Version: version}
+// Config is what the API needs to run.
+type Config struct {
+	Version string
+	Queries Queries
+	Logger  *slog.Logger
+}
 
-	return func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		_ = json.NewEncoder(w).Encode(body) // the client is gone if this fails
+// New returns the HTTP handler for the recurin API.
+func New(cfg Config) (http.Handler, error) {
+	if cfg.Queries == nil {
+		return nil, errors.New("api: Config.Queries is required")
 	}
+	if cfg.Logger == nil {
+		cfg.Logger = slog.New(slog.DiscardHandler)
+	}
+	spec, err := gen.GetSpec()
+	if err != nil {
+		return nil, fmt.Errorf("api: load embedded OpenAPI spec: %w", err)
+	}
+
+	errs := errorWriter{logger: cfg.Logger}
+	auth := authenticator{queries: cfg.Queries}
+
+	r := chi.NewRouter()
+	r.Use(
+		withRequestID,
+		withNoStore,
+		errs.recoverPanics,
+		withAuthSlot,
+		nethttpmiddleware.OapiRequestValidatorWithOptions(spec, &nethttpmiddleware.Options{
+			Options:              openapiOptions(auth.authenticate),
+			ErrorHandlerWithOpts: errs.validationError,
+			DoNotValidateServers: true,
+		}),
+	)
+	// The validator answers unknown routes and methods first; these only fire
+	// if chi and the spec ever disagree.
+	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		errs.write(w, r, errRouteNotFound(r))
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		errs.write(w, r, errMethodNotAllowed(r))
+	})
+
+	strict := gen.NewStrictHandlerWithOptions(&handlers{version: cfg.Version, queries: cfg.Queries}, nil,
+		gen.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				errs.write(w, r, errInvalidRequest("body_invalid", err.Error(), ""))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				errs.write(w, r, errInternal(err))
+			},
+		})
+	return gen.HandlerWithOptions(strict, gen.ChiServerOptions{
+		BaseRouter: r,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			errs.write(w, r, errInvalidRequest("parameter_invalid", err.Error(), ""))
+		},
+	}), nil
 }
 
 // Serve serves h on ln until ctx is cancelled, then drains in-flight requests

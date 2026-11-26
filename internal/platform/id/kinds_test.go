@@ -16,6 +16,8 @@ var allPrefixes = []string{
 	Plan{}.prefix(),
 	Price{}.prefix(),
 	Coupon{}.prefix(),
+	APIKey{}.prefix(),
+	Request{}.prefix(),
 }
 
 // TypeID allows up to 63 lower-case letters; recurin keeps prefixes short.

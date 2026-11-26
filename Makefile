@@ -49,6 +49,15 @@ tidy: ## Tidy go.mod and go.sum
 gen: ## Run code generators (sqlc, oapi-codegen) once they exist
 	go generate ./...
 
+OASDIFF_VERSION ?= v1.41.0
+API_BASE ?= origin/main
+
+.PHONY: api-check
+api-check: ## Fail if api/openapi.yaml breaks compatibility with $(API_BASE)
+	@git show $(API_BASE):api/openapi.yaml > /tmp/recurin-base-openapi.yaml 2>/dev/null \
+		|| { echo "no api/openapi.yaml on $(API_BASE); nothing to compare"; exit 0; }; \
+	go run github.com/oasdiff/oasdiff@$(OASDIFF_VERSION) breaking --fail-on ERR /tmp/recurin-base-openapi.yaml api/openapi.yaml
+
 .PHONY: check
 check: lint test ## Lint and test: what CI runs
 
