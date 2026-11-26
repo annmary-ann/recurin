@@ -10,6 +10,7 @@ linters:
     - bodyclose
     - errorlint # wrap and compare errors correctly
     - exhaustive # every enum value handled in a switch (state machines!)
+    - forbidigo # time comes from clock.Clock (see settings)
     - gocritic
     - gosec
     - misspell
@@ -22,6 +23,12 @@ linters:
   settings:
     exhaustive:
       default-signifies-exhaustive: false
+    forbidigo:
+      analyze-types: true
+      forbid:
+        # Billing must run on an injectable clock so tests can move time.
+        - pattern: ^time\.(Now|Since|Until)$
+          msg: read the time from a clock.Clock (internal/platform/clock) so tests and test clocks control it
     nolintlint:
       require-explanation: true
       require-specific: true
@@ -42,6 +49,9 @@ linters:
       # Tests may ignore errors from deferred cleanup and use test-only shortcuts.
       - path: _test\.go
         linters: [gosec, unparam]
+      # The one place allowed to read the wall clock.
+      - path: internal/platform/clock/
+        linters: [forbidigo]
 
 formatters:
   enable:
