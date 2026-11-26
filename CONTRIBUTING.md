@@ -55,9 +55,11 @@ Common tasks live in the `Makefile` (`make help` lists them):
 ./scripts/dev.ps1 make check     # lint + tests, the same as CI
 ./scripts/dev.ps1 make fmt       # format with gofumpt and goimports
 ./scripts/dev.ps1 make build     # build ./bin/recurin
+./scripts/dev.ps1 make gen       # regenerate sqlc code after editing db/queries
+./scripts/dev.ps1 make test-db   # tests against the Compose Postgres (start it first); fastest
 ```
 
-The first run builds the image from `.devcontainer/Dockerfile`; later runs reuse it, and Go's module and build caches persist in Docker volumes. The container gets the host's Docker socket, so integration tests can start Postgres with testcontainers.
+The first run builds the image from `.devcontainer/Dockerfile`; later runs reuse it, and Go's module and build caches persist in Docker volumes. The container gets the host's Docker socket, so integration tests can start Postgres with testcontainers. Schema changes, queries and database tests are described in [docs/database.md](docs/database.md).
 
 **Editors.** VS Code and JetBrains can open the repo in the devcontainer (`.devcontainer/devcontainer.json`) for completion and debugging inside the same image.
 

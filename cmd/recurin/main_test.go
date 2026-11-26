@@ -24,7 +24,6 @@ func TestRun(t *testing.T) {
 		{name: "help lists the roles", args: []string{"--help"}, wantCode: exitOK, wantStdout: "migrate"},
 		{name: "version", args: []string{"version"}, wantCode: exitOK, wantStdout: "recurin dev"},
 		{name: "unknown command", args: []string{"bill"}, wantCode: exitUsage, wantStderr: `unknown command "bill"`},
-		{name: "migrate succeeds with no migrations", args: []string{"migrate"}, wantCode: exitOK, wantStdout: "no migrations yet"},
 		{name: "worker is stubbed", args: []string{"worker"}, wantCode: exitError, wantStderr: "not implemented"},
 	}
 

@@ -28,7 +28,7 @@ Usage:
 Commands:
   api          Serve the REST API and gateway webhook receivers
   worker       Run background jobs: billing runs, notices, charges, dunning, webhooks
-  migrate      Apply database schema migrations
+  migrate      Apply schema migrations: migrate [up|down|status] (default up)
   healthcheck  Exit 0 if the local API answers /healthz (for container health checks)
   version      Print the version
   help         Show this help
@@ -36,7 +36,8 @@ Commands:
 Run one binary per role; scale api and worker independently.
 
 Environment:
-  RECURIN_HTTP_ADDR   Address the API listens on (default ":8080")
+  RECURIN_HTTP_ADDR     Address the API listens on (default ":8080")
+  RECURIN_DATABASE_URL  Postgres connection URL (postgres://...)
 `
 
 // Exit codes.
@@ -73,9 +74,7 @@ func run(ctx context.Context, args []string, getenv func(string) string, stdout,
 	case "api":
 		return runAPI(ctx, getenv, stderr)
 	case "migrate":
-		// Real migrations arrive with the database baseline (#8).
-		fmt.Fprintln(stdout, "recurin migrate: no migrations yet")
-		return exitOK
+		return runMigrate(ctx, args[1:], getenv, stdout, stderr)
 	case "worker":
 		fmt.Fprintln(stderr, "recurin worker: not implemented yet")
 		return exitError

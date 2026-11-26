@@ -4,6 +4,7 @@ package id
 // v1 ships they never change. Add a kind here when its module arrives, and add
 // it to the list in kinds_test.go so uniqueness is checked.
 const (
+	prefixAccount      = "acct"
 	prefixCustomer     = "cus"
 	prefixSubscription = "sub"
 	prefixInvoice      = "inv"
@@ -16,6 +17,8 @@ const (
 
 // Kinds. Use them as type arguments, for example id.New[id.Customer]().
 type (
+	// Account is the kind of AccountID (a tenant).
+	Account struct{}
 	// Customer is the kind of CustomerID.
 	Customer struct{}
 	// Subscription is the kind of SubscriptionID.
@@ -34,6 +37,7 @@ type (
 	Coupon struct{}
 )
 
+func (Account) prefix() string      { return prefixAccount }
 func (Customer) prefix() string     { return prefixCustomer }
 func (Subscription) prefix() string { return prefixSubscription }
 func (Invoice) prefix() string      { return prefixInvoice }
@@ -45,6 +49,8 @@ func (Coupon) prefix() string       { return prefixCoupon }
 
 // Typed IDs.
 type (
+	// AccountID identifies a tenant account: acct_...
+	AccountID = ID[Account]
 	// CustomerID identifies a customer: cus_...
 	CustomerID = ID[Customer]
 	// SubscriptionID identifies a subscription: sub_...
