@@ -7,6 +7,7 @@ import (
 
 // allPrefixes lists every kind. A new kind must be added here.
 var allPrefixes = []string{
+	Account{}.prefix(),
 	Customer{}.prefix(),
 	Subscription{}.prefix(),
 	Invoice{}.prefix(),

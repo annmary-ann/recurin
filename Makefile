@@ -22,6 +22,17 @@ cover: ## Run tests with a coverage report in coverage.out
 	go test -race -count=1 -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out | tail -1
 
+# Postgres from `make up`. In the dev container the host is host.docker.internal.
+COMPOSE_TEST_DB ?= postgres://recurin:recurin@$(or $(TESTCONTAINERS_HOST_OVERRIDE),localhost):$(or $(RECURIN_DB_PORT),5436)/postgres?sslmode=disable
+
+.PHONY: test-db
+test-db: ## Run tests against the Compose Postgres (make up first); much faster than testcontainers
+	RECURIN_TEST_DATABASE_URL='$(COMPOSE_TEST_DB)' go test -race -count=1 ./...
+
+.PHONY: test-unit
+test-unit: ## Run only the tests that need no database (go test -short)
+	go test -race -count=1 -short ./...
+
 .PHONY: lint
 lint: ## Run golangci-lint (linters and format checks)
 	golangci-lint run ./...
