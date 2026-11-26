@@ -80,6 +80,8 @@ Invoices, credit notes, payments and refunds each post exactly one balanced jour
 
 ### Conventions on every table
 
+The full rules, and how migrations, queries and database tests work, are in [database.md](database.md).
+
 - **IDs:** type-prefixed UUIDv7 (`cus_`, `sub_`, `inv_`, `pay_`), stored as native `uuid` ([ADR 0005](adr/0005-type-prefixed-uuidv7-ids.md)).
 - **Money:** `amount_paise bigint` + `currency char(3)`; rates in basis points ([ADR 0003](adr/0003-money-as-int64-paise.md)).
 - **Time:** `timestamptz` in UTC; invoice dates and GST periods computed in `Asia/Kolkata`.

@@ -1,0 +1,29 @@
+# sqlc turns db/queries/<module>/*.sql into Go. Run `make gen` (in the dev
+# container on Windows). Add one entry per module as modules get tables.
+version: "2"
+
+overrides:
+  go:
+    overrides:
+      - db_type: uuid
+        go_type: github.com/google/uuid.UUID
+      - db_type: timestamptz
+        go_type: time.Time
+      - db_type: jsonb
+        go_type: encoding/json.RawMessage
+      # Typed IDs (internal/platform/id) for primary and tenant keys.
+      - column: accounts.id
+        go_type: github.com/annmary-ann/recurin/internal/platform/id.AccountID
+
+sql:
+  - name: platform
+    engine: postgresql
+    schema: db/migrations
+    queries: db/queries/platform
+    gen:
+      go:
+        package: platformdb
+        out: internal/platform/platformdb
+        sql_package: pgx/v5
+        emit_json_tags: false
+        emit_empty_slices: true

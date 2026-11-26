@@ -16,6 +16,7 @@ env:
   # Keep in step with .devcontainer/Dockerfile.
   GOLANGCI_LINT_VERSION: v2.15.0
   GOVULNCHECK_VERSION: v1.9.0
+  SQLC_VERSION: 1.31.1
 
 jobs:
   lint:
@@ -59,6 +60,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Install sqlc
+        run: |
+          curl -fsSL "https://github.com/sqlc-dev/sqlc/releases/download/v${SQLC_VERSION}/sqlc_${SQLC_VERSION}_linux_amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin sqlc
+          sqlc version
       - name: Regenerate and tidy
         run: |
           go generate ./...
